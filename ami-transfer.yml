@@ -1,0 +1,53 @@
+---
+- name: copy ami from public account to govcloud account 
+  hosts: localhost
+  gather_facts: true
+  become: false 
+
+  vars:
+    pub_bucket: rhg-aws-disk-image-export
+    pub_ami: ami-08ff4cb0398e5cdd2 
+    pub_raw_file: export-ami-0fbfe77f397bb2cb4.raw
+#    pub_raw_file: export-ami-0cfc65721bdc41191.raw #small test file
+
+  vars_files: secrets.yml
+
+  tasks:
+    - name: export public ami to s3 bucket
+      command: "aws ec2 export-image --image-id {{ pub_ami }} --disk-image-format raw --s3-export-location S3Bucket={{ pub_bucket }},S3Prefix=exports/ --profile=admin"
+#      command: "uname -a"
+      register: export_status
+      tags: export
+
+    - name: show export status message
+      debug:
+        var: export_status
+      tags: export
+
+    - name: show export id
+      debug:
+        msg: "{{ export_status.stdout_lines[2].split(':')[1].split('\"')[1] }}"
+      tags: export
+
+#    - name: find a way to monitor the job with ...
+      # aws ec2 describe-export-image-tasks --export-image-task-ids export-ami-1234567890abcdef0
+
+    - name: download public ami .raw file
+      amazon.aws.aws_s3:
+        aws_access_key: "{{ pub_access_key }}"
+        aws_secret_key: "{{ pub_secret_key }}"
+        bucket: "{{ pub_bucket }}"
+#        object: "/exports/{{ export_status.stdout_lines[2].split(':')[1].split('\"')[1] }}"
+        object: "/exports/{{ pub_raw_file }}"
+        mode: get
+        dest: /home/sdunne/src/sdunne/amitransfer/raw_files/{{ pub_raw_file }}
+      tags: download
+
+#    - name: copy .raw file to s3 bucket
+#      amazon.aws.aws_s3:
+#        aws_access_key:
+#        aws_secret_key:
+#        bucket: "{{ my_bucket }}"
+#        object: /sdunne/
+#        src: /home/sdunne/Downloads/af9281b5-3149-479a-8b9e-ff94cd763ad2-image.raw
+#        mode: put 

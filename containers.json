@@ -1,0 +1,8 @@
+{
+    "Description": "my-rhel83",
+    "Format": "raw",
+    "UserBucket": {
+        "S3Bucket": "sdunne-test",
+        "S3Key": "rhel83-image.raw"
+    }
+}
